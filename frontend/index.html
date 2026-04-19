@@ -1,111 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+  <meta charset="UTF-8">
   <title>Aplikasi Identifikasi Ikan</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      margin: 0;
-      background-color: #f2f2f2;
-    }
-
-    header {
-      background-color: #1f4e79;
-      color: white;
-      padding: 15px;
-      text-align: center;
-    }
-
-    nav {
-      background-color: #ddd;
-      padding: 10px;
-      text-align: center;
-    }
-
-    nav button {
-      margin: 5px;
-      padding: 10px;
-      cursor: pointer;
-    }
-
-    .section {
-      display: none;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .active {
-      display: block;
-    }
-
-    textarea {
-      width: 60%;
-      height: 100px;
-    }
-
-    button.identifikasi {
-      margin-top: 10px;
-      padding: 10px 20px;
-      background-color: #1f4e79;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-
-    .result {
-      text-align: left;
-      margin: 20px auto;
-      width: 60%;
-    }
-  </style>
-
-  <script>
-    function showSection(id) {
-      document.getElementById("beranda").classList.remove("active");
-      document.getElementById("dna").classList.remove("active");
-      document.getElementById("hasil").classList.remove("active");
-
-      document.getElementById(id).classList.add("active");
-    }
-  </script>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
   <header>
-    <h1>Aplikasi Identifikasi Spesies Ikan</h1>
+    <h1>Identifikasi Spesies Ikan</h1>
+    <p>Berdasarkan DNA Sequence</p>
   </header>
 
   <nav>
     <button onclick="showSection('beranda')">Beranda</button>
-    <button onclick="showSection('dna')">Input DNA</button>
+    <button onclick="showSection('input-dna')">Input DNA</button>
     <button onclick="showSection('hasil')">Hasil</button>
   </nav>
 
-  <!-- BERANDA -->
-  <div id="beranda" class="section active">
-    <h2>Selamat Datang</h2>
-    <p>Aplikasi ini digunakan untuk mengidentifikasi spesies ikan berdasarkan DNA.</p>
-  </div>
+  <main>
 
-  <!-- INPUT DNA -->
-  <div id="dna" class="section">
-    <h2>Input DNA</h2>
-    <textarea placeholder="Masukkan DNA di sini..."></textarea><br>
-    <button class="identifikasi" onclick="showSection('hasil')">Identifikasi</button>
-  </div>
+    <!-- BERANDA -->
+    <section id="beranda" class="card active">
+      <h2>Selamat Datang</h2>
+      <p>
+        Aplikasi ini membantu mengidentifikasi spesies ikan menggunakan data DNA.
+      </p>
+    </section>
 
-  <!-- HASIL -->
-  <div id="hasil" class="section">
-    <h2>Hasil Identifikasi</h2>
-    <div class="result">
-      <p><b>Spesies:</b> -</p>
-      <p><b>Genus:</b> -</p>
-      <p><b>Family:</b> -</p>
-      <p><b>Confidence:</b> -</p>
-    </div>
-  </div>
+    <!-- INPUT -->
+    <section id="input-dna" class="card">
+      <h2>Input DNA</h2>
 
+      <textarea id="dnaInput" placeholder="Masukkan DNA sequence..."></textarea>
+
+      <button class="btn" onclick="identifikasiDNA()">Identifikasi</button>
+    </section>
+
+    <!-- HASIL -->
+    <section id="hasil" class="card">
+      <h2>Hasil Identifikasi</h2>
+
+      <div class="hasil">
+        <p><b>DNA:</b> <span id="outDNA">-</span></p>
+        <p><b>Spesies:</b> <span id="outSpecies">-</span></p>
+        <p><b>Genus:</b> <span id="outGenus">-</span></p>
+        <p><b>Family:</b> <span id="outFamily">-</span></p>
+        <p><b>Confidence:</b> <span id="outConfidence">-</span></p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
 </body>
 </html>
