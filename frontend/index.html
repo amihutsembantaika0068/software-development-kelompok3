@@ -2,57 +2,35 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Aplikasi Identifikasi Ikan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identifikasi Spesies Ikan</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-  <header>
-    <h1>Identifikasi Spesies Ikan</h1>
-    <p>Berdasarkan DNA Sequence</p>
+  <header class="hero">
+    <h1>🐟 Identifikasi Spesies Ikan</h1>
+    <p>Aplikasi berbasis web untuk mengidentifikasi spesies ikan menggunakan sekuens DNA.</p>
+    <button onclick="scrollKeForm()">Mulai Identifikasi</button>
   </header>
 
-  <nav>
-    <button onclick="showSection('beranda')">Beranda</button>
-    <button onclick="showSection('input-dna')">Input DNA</button>
-    <button onclick="showSection('hasil')">Hasil</button>
-  </nav>
+  <main class="container" id="form-section">
+    <section class="card">
+      <h2>Input Sekuens DNA</h2>
+      <p>Masukkan sekuens DNA ikan pada kolom berikut.</p>
 
-  <main>
+      <textarea id="dnaInput" placeholder="Contoh: ATGCGTACGTTAGC..."></textarea>
 
-    <!-- BERANDA -->
-    <section id="beranda" class="card active">
-      <h2>Selamat Datang</h2>
-      <p>
-        Aplikasi ini membantu mengidentifikasi spesies ikan menggunakan data DNA.
-      </p>
+      <button onclick="identifikasiIkan()">Proses Identifikasi</button>
+
+      <div id="loading" class="loading"></div>
+      <div id="hasil" class="hasil"></div>
     </section>
-
-    <!-- INPUT -->
-    <section id="input-dna" class="card">
-      <h2>Input DNA</h2>
-
-      <textarea id="dnaInput" placeholder="Masukkan DNA sequence..."></textarea>
-
-      <button class="btn" onclick="identifikasiDNA()">Identifikasi</button>
-    </section>
-
-    <!-- HASIL -->
-    <section id="hasil" class="card">
-      <h2>Hasil Identifikasi</h2>
-
-      <div class="hasil">
-        <p><b>DNA:</b> <span id="outDNA">-</span></p>
-        <p><b>Spesies:</b> <span id="outSpecies">-</span></p>
-        <p><b>Genus:</b> <span id="outGenus">-</span></p>
-        <p><b>Family:</b> <span id="outFamily">-</span></p>
-        <p><b>Confidence:</b> <span id="outConfidence">-</span></p>
-      </div>
-
-    </section>
-
   </main>
+
+  <footer>
+    <p>Software Development Kelompok 3</p>
+  </footer>
 
   <script src="app.js"></script>
 </body>
