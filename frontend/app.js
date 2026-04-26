@@ -1,26 +1,56 @@
-function showSection(id) {
-  // sembunyikan semua section
-  document.querySelectorAll(".card").forEach(section => {
-    section.classList.remove("active");
+function scrollKeForm() {
+  document.getElementById("form-section").scrollIntoView({
+    behavior: "smooth"
   });
-
-  // tampilkan section yang dipilih
-  document.getElementById(id).classList.add("active");
 }
 
-function identifikasiDNA() {
-  // ambil input DNA
-  let dna = document.getElementById("dnaInput").value.trim();
+function identifikasiIkan() {
+  const dnaInput = document.getElementById("dnaInput").value.trim();
+  const hasilDiv = document.getElementById("hasil");
+  const loadingDiv = document.getElementById("loading");
 
-  // tampilkan DNA yang diinput
-  document.getElementById("outDNA").innerText = dna || "-";
+  hasilDiv.innerHTML = "";
 
-  // hasil dummy (sementara)
-  document.getElementById("outSpecies").innerText = "Oncorhynchus nerka";
-  document.getElementById("outGenus").innerText = "Oncorhynchus";
-  document.getElementById("outFamily").innerText = "Salmonidae";
-  document.getElementById("outConfidence").innerText = "92%";
+  if (dnaInput === "") {
+    hasilDiv.innerHTML = `<p class="error">Sekuens DNA tidak boleh kosong.</p>`;
+    return;
+  }
 
-  // pindah ke halaman hasil
-  showSection("hasil");
+  loadingDiv.innerHTML = "Memproses data DNA...";
+
+  fetch("http://localhost:3000/predict", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sequence: dnaInput
+    })
+  })
+    .then(response => response.json())
+    .then(data => {
+      loadingDiv.innerHTML = "";
+
+      if (data.error) {
+        hasilDiv.innerHTML = `<p class="error">${data.error}</p>`;
+        return;
+      }
+
+      hasilDiv.innerHTML = `
+        <h3>Hasil Identifikasi</h3>
+        <p><strong>Family:</strong> ${data.family}</p>
+        <p><strong>Genus:</strong> ${data.genus}</p>
+        <p><strong>Species:</strong> ${data.species}</p>
+        <p><strong>Akurasi:</strong> ${data.akurasi}</p>
+      `;
+    })
+    .catch(error => {
+      loadingDiv.innerHTML = "";
+      hasilDiv.innerHTML = `
+        <p class="error">
+          Gagal terhubung ke backend. Pastikan backend sudah berjalan di http://localhost:3000
+        </p>
+      `;
+      console.error("Error:", error);
+    });
 }
