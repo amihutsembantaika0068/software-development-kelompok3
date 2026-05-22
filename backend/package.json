@@ -1,7 +1,7 @@
 {
   "name": "backend-identifikasi-ikan",
   "version": "1.0.0",
-  "description": "Backend aplikasi identifikasi spesies ikan berbasis DNA",
+  "description": "Backend aplikasi identifikasi spesies ikan berbasis DNA menggunakan KNN",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
