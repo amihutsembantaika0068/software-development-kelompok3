@@ -3,25 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Identifikasi Spesies Ikan</title>
+  <title>Identifikasi Spesies Ikan - KNN</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header class="hero">
     <h1>🐟 Identifikasi Spesies Ikan</h1>
-    <p>Aplikasi berbasis web untuk mengidentifikasi spesies ikan menggunakan sekuens DNA.</p>
-    <button onclick="scrollKeForm()">Mulai Identifikasi</button>
+    <p>Aplikasi analisis sekuens DNA menggunakan Algoritma Klasifikasi K-Nearest Neighbors (KNN).</p>
+    <button onclick="scrollKeForm()">Mulai Analisis DNA</button>
   </header>
 
   <main class="container" id="form-section">
     <section class="card">
       <h2>Input Sekuens DNA</h2>
-      <p>Masukkan sekuens DNA ikan pada kolom berikut.</p>
+      <p>Tempelkan sekuens basa nitrogen DNA ikan (A, T, G, C) pada kolom di bawah ini:</p>
 
-      <textarea id="dnaInput" placeholder="Contoh: ATGCGTACGTTAGC..."></textarea>
+      <textarea id="dnaInput" placeholder="Contoh: CACCGCGGTTATACGAGAGGCCCTAGTTGAT..."></textarea>
 
-      <button onclick="identifikasiIkan()">Proses Identifikasi</button>
+      <div class="action-bar">
+        <button onclick="identifikasiIkan()" id="btnProses">Proses Identifikasi KNN</button>
+      </div>
 
       <div id="loading" class="loading"></div>
       <div id="hasil" class="hasil"></div>
@@ -29,7 +31,7 @@
   </main>
 
   <footer>
-    <p>Software Development Kelompok 3</p>
+    <p>© 2026 Software Development Kelompok 12 — Implementasi KNN Embedded Model</p>
   </footer>
 
   <script src="app.js"></script>
