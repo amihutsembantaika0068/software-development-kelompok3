@@ -11,31 +11,33 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error("Koneksi database gagal:", err.message);
+    console.error("❌ Koneksi database gagal:", err.message);
     return;
   }
-
-  console.log("Database terhubung");
+  console.log("⚡ Database terhubung secara lokal");
 });
 
 const sqlDelete = "DELETE FROM dataset_ikan";
 
 db.query(sqlDelete, (err) => {
   if (err) {
-    console.error("Gagal menghapus data lama:", err.message);
+    console.error("❌ Gagal membersihkan data lama:", err.message);
     return;
   }
 
-  console.log("Data lama berhasil dihapus");
+  console.log("⏳ Membersihkan data lama dan memulai proses import dataset...");
 
+  // Membaca file CSV dari folder dataset lokal laptop masing-masing
   fs.createReadStream("dataset/clean_fish_dna.csv")
     .pipe(csv())
     .on("data", (row) => {
-      const sequence = row.sequence;
-      const family = row.Family;
-      const genus = row.Genus;
-      const species = row.Species;
+      // Menangani fleksibilitas jika di file CSV menggunakan huruf kapital awal (Family, Genus, Species)
+      const sequence = row.sequence || row.Sequence;
+      const family = row.Family || row.family;
+      const genus = row.Genus || row.genus;
+      const species = row.Species || row.species;
 
+      // Menembak ke nama kolom database fiks kamu yang menggunakan huruf kecil semua
       const sqlInsert = `
         INSERT INTO dataset_ikan (sequence, family, genus, species)
         VALUES (?, ?, ?, ?)
@@ -43,12 +45,12 @@ db.query(sqlDelete, (err) => {
 
       db.query(sqlInsert, [sequence, family, genus, species], (err) => {
         if (err) {
-          console.error("Gagal memasukkan data:", err.message);
+          console.error("❌ Gagal memasukkan baris data:", err.message);
         }
       });
     })
     .on("end", () => {
-      console.log("Dataset berhasil dimasukkan ke database");
+      console.log("✅ Dataset sukses di-import ke MySQL lokal laptop Anda!");
       db.end();
     });
 });
