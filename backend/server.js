@@ -1,126 +1,91 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
-require("dotenv").config();
 
 const app = express();
 
+// 1. Keamanan Dasar: Menambah batasan ukuran request agar tidak kena serangan DDoS
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); 
 
-const db = mysql.createConnection({
+// 2. Menggunakan Pool: Jauh lebih aman dan tangguh untuk koneksi Cloud
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error("❌ Koneksi database cloud server gagal:", err.message);
-    return;
-  }
-  console.log("⚡ [KNN Backend] MySQL Server aktif di Cloud Aiven.io");
-});
-
+// Fungsi pembantu Hamming
 function hitungJarakHamming(input, target) {
   let jarak = 0;
-  const panjangMinimal = Math.min(input.length, target.length);
-
-  for (let i = 0; i < panjangMinimal; i++) {
-    if (input[i] !== target[i]) {
-      jarak++;
-    }
+  const len = Math.min(input.length, target.length);
+  for (let i = 0; i < len; i++) {
+    if (input[i] !== target[i]) jarak++;
   }
-
-  const selisihPanjang = Math.abs(input.length - target.length);
-  jarak += selisihPanjang;
-
-  return jarak;
+  return jarak + Math.abs(input.length - target.length);
 }
 
-app.get("/", (req, res) => {
-  res.send("Backend KNN Identifikasi Spesies Ikan Berjalan Lancar di Cloud");
-});
-
+// 3. Endpoint Utama
 app.post("/predict", (req, res) => {
-  const inputSequence = req.body.sequence;
+  const { sequence } = req.body;
 
-  if (!inputSequence || inputSequence.trim() === "") {
-    return res.status(400).json({ error: "Sequence DNA tidak boleh kosong" });
+  // Validasi input ketat
+  if (!sequence || typeof sequence !== 'string' || sequence.trim().length === 0) {
+    return res.status(400).json({ error: "Sequence DNA tidak valid" });
   }
 
-  const sql = "SELECT * FROM dataset_ikan";
+  const cleanInput = sequence.toUpperCase().trim();
 
-  db.query(sql, (err, results) => {
+  // Menggunakan pool untuk query yang aman
+  pool.query("SELECT * FROM dataset_ikan", (err, results) => {
     if (err) {
-      return res.status(500).json({ error: "Terjadi kesalahan pada database cloud" });
+      console.error("Database Query Error:", err);
+      return res.status(500).json({ error: "Gagal mengambil data referensi" });
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Dataset referensi belum tersedia di Cloud Aiven" });
+    if (!results || results.length === 0) {
+      return res.status(404).json({ error: "Dataset kosong" });
     }
 
-    const nilaiK = 1;
-    const daftarTetangga = [];
-    const cleanInput = inputSequence.toUpperCase().trim();
+    // Algoritma KNN
+    let minJarak = Infinity;
+    let bestMatch = null;
 
     results.forEach((data) => {
-      const cleanTarget = data.sequence.toUpperCase().trim();
-      const jarak = hitungJarakHamming(cleanInput, cleanTarget);
+      const target = data.sequence.toUpperCase().trim();
+      const jarak = hitungJarakHamming(cleanInput, target);
+      const panjangMaks = Math.max(cleanInput.length, target.length);
+      const akurasi = ((panjangMaks - jarak) / panjangMaks) * 100;
 
-      const panjangMaksimal = Math.max(cleanInput.length, cleanTarget.length);
-      const akurasi = panjangMaksimal === 0 ? 0 : ((panjangMaksimal - jarak) / panjangMaksimal) * 100;
-
-      daftarTetangga.push({
-        data: data,
-        jarak: jarak,
-        accuracy: akurasi
-      });
+      if (jarak < minJarak) {
+        minJarak = jarak;
+        bestMatch = { ...data, akurasi: akurasi.toFixed(2) + "%" };
+      }
     });
 
-    daftarTetangga.sort((a, b) => a.jarak - b.jarak);
-
-    const tetanggaTerdekat = daftarTetangga[0];
-
-    if (!tetanggaTerdekat || tetanggaTerdekat.accuracy === 0) {
-      return res.json({
-        family: "Tidak Diketahui",
-        genus: "Tidak Diketahui",
-        species: "Spesies Tidak Teridentifikasi",
-        akurasi: "0.00%"
-      });
-    }
-
-    const akurasiFinal = tetanggaTerdekat.accuracy.toFixed(2) + "%";
-    const hasilModel = tetanggaTerdekat.data;
-
-    const insertRiwayat = `
-      INSERT INTO riwayat_identifikasi 
-      (input_sequence, hasil_family, hasil_genus, hasil_species, akurasi)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-
-    db.query(
-      insertRiwayat,
-      [cleanInput, hasilModel.family, hasilModel.genus, hasilModel.species, akurasiFinal],
-      (err) => {
-        if (err) console.error("❌ Gagal menyimpan riwayat ke cloud database:", err.message);
-      }
-    );
+    // Simpan ke Riwayat secara Asinkron (tidak memblokir respon)
+    const sqlLog = "INSERT INTO riwayat_identifikasi (input_sequence, hasil_family, hasil_genus, hasil_species, akurasi) VALUES (?, ?, ?, ?, ?)";
+    pool.query(sqlLog, [cleanInput, bestMatch.family, bestMatch.genus, bestMatch.species, bestMatch.akurasi], (err) => {
+      if (err) console.error("Gagal simpan riwayat:", err);
+    });
 
     res.json({
-      family: hasilModel.family,
-      genus: hasilModel.genus,
-      species: hasilModel.species,
-      akurasi: akurasiFinal
+      family: bestMatch.family,
+      genus: bestMatch.genus,
+      species: bestMatch.species,
+      akurasi: bestMatch.akurasi
     });
   });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(🚀 Server KNN berjalan lancar di http://localhost:${PORT});
+  console.log(🚀 Server berjalan aman di http://localhost:${PORT});
 });
