@@ -1,91 +1,139 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
 
 const app = express();
 
-// 1. Keamanan Dasar: Menambah batasan ukuran request agar tidak kena serangan DDoS
 app.use(cors());
-app.use(express.json({ limit: '10kb' })); 
+app.use(express.json());
 
-// 2. Menggunakan Pool: Jauh lebih aman dan tangguh untuk koneksi Cloud
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: { rejectUnauthorized: false },
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "db_identifikasi_ikan"
 });
 
-// Fungsi pembantu Hamming
+db.connect((err) => {
+  if (err) {
+    console.error("❌ Koneksi database server gagal:", err.message);
+    return;
+  }
+  console.log("⚡ [KNN Backend] MySQL Server aktif di localhost");
+});
+
+/**
+ * METRIK JARAK KNN: Hamming Distance
+ * Menghitung perbedaan jumlah karakter string DNA pada posisi/indeks yang sama.
+ * Semakin kecil nilai jarak, semakin dekat/mirip sekuensnya (Tetangga Terdekat).
+ */
 function hitungJarakHamming(input, target) {
   let jarak = 0;
-  const len = Math.min(input.length, target.length);
-  for (let i = 0; i < len; i++) {
-    if (input[i] !== target[i]) jarak++;
+  const panjangMinimal = Math.min(input.length, target.length);
+
+  // 1. Hitung perbedaan karakter per indeks posisi huruf DNA
+  for (let i = 0; i < panjangMinimal; i++) {
+    if (input[i] !== target[i]) {
+      jarak++;
+    }
   }
-  return jarak + Math.abs(input.length - target.length);
+
+  // 2. Berikan penalti jarak jika ada selisih panjang karakter string
+  const selisihPanjang = Math.abs(input.length - target.length);
+  jarak += selisihPanjang;
+
+  return jarak;
 }
 
-// 3. Endpoint Utama
-app.post("/predict", (req, res) => {
-  const { sequence } = req.body;
+app.get("/", (req, res) => {
+  res.send("Backend KNN Identifikasi Spesies Ikan Berjalan Lancar");
+});
 
-  // Validasi input ketat
-  if (!sequence || typeof sequence !== 'string' || sequence.trim().length === 0) {
-    return res.status(400).json({ error: "Sequence DNA tidak valid" });
+/**
+ * ENDPOINT UTAMA PREDIKSI MENGGUNAKAN ALGORITMA KNN (K=1)
+ */
+app.post("/predict", (req, res) => {
+  const inputSequence = req.body.sequence;
+
+  if (!inputSequence || inputSequence.trim() === "") {
+    return res.status(400).json({ error: "Sequence DNA tidak boleh kosong" });
   }
 
-  const cleanInput = sequence.toUpperCase().trim();
+  const sql = "SELECT * FROM dataset_ikan";
 
-  // Menggunakan pool untuk query yang aman
-  pool.query("SELECT * FROM dataset_ikan", (err, results) => {
+  db.query(sql, (err, results) => {
     if (err) {
-      console.error("Database Query Error:", err);
-      return res.status(500).json({ error: "Gagal mengambil data referensi" });
+      return res.status(500).json({ error: "Terjadi kesalahan pada database" });
     }
 
-    if (!results || results.length === 0) {
-      return res.status(404).json({ error: "Dataset kosong" });
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Dataset referensi lokal belum tersedia di MySQL" });
     }
 
-    // Algoritma KNN
-    let minJarak = Infinity;
-    let bestMatch = null;
+    const nilaiK = 1; // Menetapkan K=1 untuk mencari 1 tetangga terdekat
+    const daftarTetangga = [];
+    const cleanInput = inputSequence.toUpperCase().trim();
 
+    // PROSES KNN LANGKAH 1: Hitung jarak Hamming ke seluruh data referensi di database
     results.forEach((data) => {
-      const target = data.sequence.toUpperCase().trim();
-      const jarak = hitungJarakHamming(cleanInput, target);
-      const panjangMaks = Math.max(cleanInput.length, target.length);
-      const akurasi = ((panjangMaks - jarak) / panjangMaks) * 100;
+      const cleanTarget = data.sequence.toUpperCase().trim();
+      const jarak = hitungJarakHamming(cleanInput, cleanTarget);
 
-      if (jarak < minJarak) {
-        minJarak = jarak;
-        bestMatch = { ...data, akurasi: akurasi.toFixed(2) + "%" };
+      // Konversi nilai jarak Hamming menjadi persentase akurasi teks
+      const panjangMaksimal = Math.max(cleanInput.length, cleanTarget.length);
+      const akurasi = panjangMaksimal === 0 ? 0 : ((panjangMaksimal - jarak) / panjangMaksimal) * 100;
+
+      daftarTetangga.push({
+        data: data,
+        jarak: jarak,
+        akurasi: akurasi
+      });
+    });
+
+    // PROSES KNN LANGKAH 2: Urutkan data dari jarak terkecil ke terbesar (Sorting Ascending)
+    daftarTetangga.sort((a, b) => a.jarak - b.jarak);
+
+    // PROSES KNN LANGKAH 3: Ambil objek tetangga dengan jarak terdekat teratas (K=1)
+    const tetanggaTerdekat = daftarTetangga[0];
+
+    // Proteksi utama: Jika input ngawur / akurasi 0%, server tidak akan crash/mati
+    if (!tetanggaTerdekat || tetanggaTerdekat.akurasi === 0) {
+      return res.json({
+        family: "Tidak Diketahui",
+        genus: "Tidak Diketahui",
+        species: "Spesies Tidak Teridentifikasi",
+        akurasi: "0.00%"
+      });
+    }
+
+    const akurasiFinal = tetanggaTerdekat.akurasi.toFixed(2) + "%";
+    const hasilModel = tetanggaTerdekat.data;
+
+    // PROSES LANGKAH 4: Simpan riwayat keputusan model KNN ke database fiks kelompok (kolom huruf kecil)
+    const insertRiwayat = `
+      INSERT INTO riwayat_identifikasi 
+      (input_sequence, hasil_family, hasil_genus, hasil_species, akurasi)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      insertRiwayat,
+      [cleanInput, hasilModel.family, hasilModel.genus, hasilModel.species, akurasiFinal],
+      (err) => {
+        if (err) console.error("❌ Gagal menyimpan riwayat ke database:", err.message);
       }
-    });
+    );
 
-    // Simpan ke Riwayat secara Asinkron (tidak memblokir respon)
-    const sqlLog = "INSERT INTO riwayat_identifikasi (input_sequence, hasil_family, hasil_genus, hasil_species, akurasi) VALUES (?, ?, ?, ?, ?)";
-    pool.query(sqlLog, [cleanInput, bestMatch.family, bestMatch.genus, bestMatch.species, bestMatch.akurasi], (err) => {
-      if (err) console.error("Gagal simpan riwayat:", err);
-    });
-
+    // PROSES LANGKAH 5: Kembalikan hasil klasifikasi akhir KNN ke Frontend (kolom huruf kecil)
     res.json({
-      family: bestMatch.family,
-      genus: bestMatch.genus,
-      species: bestMatch.species,
-      akurasi: bestMatch.akurasi
+      family: hasilModel.family,
+      genus: hasilModel.genus,
+      species: hasilModel.species,
+      akurasi: akurasiFinal
     });
   });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(🚀 Server berjalan aman di http://localhost:${PORT});
+app.listen(3000, () => {
+  console.log("🚀 Server KNN berjalan lancar di http://localhost:3000");
 });
