@@ -1,51 +1,77 @@
-🐟 Aplikasi Identifikasi Spesies Ikan Berbasis DNA
-👥 Anggota Tim
+Aplikasi Identifikasi Spesies Ikan Berbasis DNA
+
+Aplikasi berbasis web untuk identifikasi spesies ikan secara instan menggunakan algoritma K-Nearest Neighbors (KNN) berdasarkan analisis sekuens DNA.
+
+Anggota Tim
+
 Amihutsem Bantaika (2313020068) — Project Manager
+
 Fendi Hari Arta (2313020148) — Frontend Developer
+
 Mochammad Wisnu Rifa’i (2313020160) — Backend Developer
-📌 Deskripsi Proyek
 
-Proyek ini merupakan aplikasi berbasis web yang digunakan untuk mengidentifikasi spesies ikan berdasarkan sekuens DNA dengan memanfaatkan metode machine learning.
+Deskripsi Proyek
 
-Aplikasi ini memungkinkan pengguna untuk:
+Proyek ini mengintegrasikan metode bioinformatika dengan teknologi web untuk membantu peneliti dan akademisi mengidentifikasi spesies ikan secara cepat dan akurat. Sistem membandingkan input sekuens DNA pengguna dengan dataset referensi menggunakan Hamming Distance untuk menentukan kemiripan genetik.
 
-Memasukkan data sekuens DNA
-Memproses data DNA melalui backend
-Menampilkan hasil identifikasi spesies ikan
-⚙️ Teknologi yang Digunakan
-Frontend: HTML, CSS, JavaScript
-Backend: Node.js (Express)
-Database: MySQL
-Dataset: DNA ikan (CSV)
-📂 Struktur Project
+Fitur Utama
 
-frontend/ → Tampilan aplikasi (UI)
-backend/ → Server, API, database, dataset
-docs/ → Dokumentasi proyek
-README.md
+Identifikasi Real-Time: Proses klasifikasi dilakukan secara asynchronous tanpa perlu memuat ulang halaman.
 
-📊 Progress Mingguan
-Minggu 1: docs/weekly-progress/week-1.md
-Minggu 2: docs/weekly-progress/week-2.md
-Minggu 3: docs/weekly-progress/week-3.md
-Minggu 4: docs/weekly-progress/week-4.md
-Minggu 5: docs/weekly-progress/week-5.md
-📁 Dataset
+Algoritma KNN: Implementasi klasifikasi cerdas untuk mencari tetangga terdekat dalam database DNA.
 
-Dataset yang digunakan merupakan dataset DNA ikan yang telah dibersihkan.
+Responsive UI: Desain antarmuka modern yang interaktif dan user-friendly.
 
-Struktur data:
+Riwayat Identifikasi: Pencatatan otomatis setiap hasil klasifikasi ke dalam basis data MySQL.
 
-sequence
-Family
-Genus
-Species
+Teknologi
 
-Dataset digunakan sebagai acuan dalam proses identifikasi spesies ikan.
+Frontend: HTML5, CSS3, JavaScript (Fetch API).
 
-🔄 Alur Sistem
-Pengguna memasukkan data DNA melalui frontend
-Data dikirim ke backend
-Backend memproses data menggunakan dataset/database
-Hasil dikirim kembali ke frontend
-Hasil ditampilkan ke pengguna
+Backend: Node.js, Express.js, MySQL2 (Connector).
+
+Database: MySQL.
+
+Algoritma: K-Nearest Neighbors (KNN).
+
+Cara Menjalankan Aplikasi
+
+Persiapan Database:
+
+Pastikan XAMPP atau MySQL aktif.
+
+Buat database dengan nama db_identifikasi_ikan.
+
+Import struktur tabel dari file .sql yang tersedia di folder database.
+
+Setup Backend:
+
+Masuk ke folder backend.
+
+Jalankan npm install untuk menginstal dependensi.
+
+Jalankan npm start untuk menghidupkan server di port 3000.
+
+Menjalankan Aplikasi:
+
+Buka file index.html atau akses melalui server frontend di browser Anda.
+
+Alur Kerja Sistem
+
+Input: Pengguna memasukkan sekuens DNA pada form yang tersedia.
+
+Request: Frontend mengirim data ke Backend (/predict) via JSON.
+
+Processing: Backend menghitung kemiripan antara input dan dataset menggunakan KNN.
+
+Response: Hasil (Family, Genus, Species, Confidence) ditampilkan ke layar pengguna.
+
+Struktur Project
+
+/frontend: Berisi aset UI, HTML, dan logika client-side.
+
+/backend: Berisi logika server, API, konfigurasi database, dan dataset.
+
+/database: Berisi file skrip SQL untuk konfigurasi database.
+
+Proyek Mata Kuliah Software Development - Universitas Nusantara PGRI Kediri 2025/2026
